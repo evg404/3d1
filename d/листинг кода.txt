@@ -1,0 +1,332 @@
+// 3D_1.cpp : Определяет точку входа для приложения.
+//
+
+#include "framework.h"
+#include "3D_1.h"
+#include "cmath"
+
+#define MAX_LOADSTRING 100
+
+// Глобальные переменные:
+HINSTANCE hInst;                                // текущий экземпляр
+WCHAR szTitle[MAX_LOADSTRING];                  // Текст строки заголовка
+WCHAR szWindowClass[MAX_LOADSTRING];            // имя класса главного окна
+
+// Отправить объявления функций, включенных в этот модуль кода:
+ATOM                MyRegisterClass(HINSTANCE hInstance);
+BOOL                InitInstance(HINSTANCE, int);
+LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+                     _In_opt_ HINSTANCE hPrevInstance,
+                     _In_ LPWSTR    lpCmdLine,
+                     _In_ int       nCmdShow)
+{
+    UNREFERENCED_PARAMETER(hPrevInstance);
+    UNREFERENCED_PARAMETER(lpCmdLine);
+
+    // TODO: Разместите код здесь.
+
+    // Инициализация глобальных строк
+    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDC_MY3D1, szWindowClass, MAX_LOADSTRING);
+    MyRegisterClass(hInstance);
+
+    // Выполнить инициализацию приложения:
+    if (!InitInstance (hInstance, nCmdShow))
+    {
+        return FALSE;
+    }
+
+    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY3D1));
+
+    MSG msg;
+
+    // Цикл основного сообщения:
+    while (GetMessage(&msg, nullptr, 0, 0))
+    {
+        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+    }
+
+    return (int) msg.wParam;
+}
+
+
+
+//
+//  ФУНКЦИЯ: MyRegisterClass()
+//
+//  ЦЕЛЬ: Регистрирует класс окна.
+//
+ATOM MyRegisterClass(HINSTANCE hInstance)
+{
+    WNDCLASSEXW wcex;
+
+    wcex.cbSize = sizeof(WNDCLASSEX);
+
+    wcex.style          = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc    = WndProc;
+    wcex.cbClsExtra     = 0;
+    wcex.cbWndExtra     = 0;
+    wcex.hInstance      = hInstance;
+    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY3D1));
+    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
+    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_MY3D1);
+    wcex.lpszClassName  = szWindowClass;
+    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+
+    return RegisterClassExW(&wcex);
+}
+
+//
+//   ФУНКЦИЯ: InitInstance(HINSTANCE, int)
+//
+//   ЦЕЛЬ: Сохраняет маркер экземпляра и создает главное окно
+//
+//   КОММЕНТАРИИ:
+//
+//        В этой функции маркер экземпляра сохраняется в глобальной переменной, а также
+//        создается и выводится главное окно программы.
+//
+BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
+{
+   hInst = hInstance; // Сохранить маркер экземпляра в глобальной переменной
+
+   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+
+   if (!hWnd)
+   {
+      return FALSE;
+   }
+
+   ShowWindow(hWnd, nCmdShow);
+   UpdateWindow(hWnd);
+
+   return TRUE;
+}
+
+//
+//  ФУНКЦИЯ: WndProc(HWND, UINT, WPARAM, LPARAM)
+//
+//  ЦЕЛЬ: Обрабатывает сообщения в главном окне.
+//
+//  WM_COMMAND  - обработать меню приложения
+//  WM_PAINT    - Отрисовка главного окна
+//  WM_DESTROY  - отправить сообщение о выходе и вернуться
+//
+//
+
+POINT plane[] =
+{
+    //корпус
+    {300, 400},  {290, 440},  {290, 720},
+    {310, 720},  {310, 440},  {300, 400},
+
+    {-1, -1},  
+
+    //левое крыло
+    {290, 490}, {120, 600}, {290, 600},
+
+    {-1, -1},   
+
+    //правое крыло
+    {310, 490}, {480, 600}, {310, 600},
+
+    {-1, -1},   
+    //хвост
+
+    //левая часть
+    {290, 670}, {240, 720}, {290, 720},
+
+    {-1, -1},  
+
+    //правая часть
+    {310, 670}, {360, 720}, {310, 720},
+
+    {-1, -1},   
+
+    //вертикальная линия сзади по центру
+    {300, 670}, {300, 730}
+};
+
+const int PLANE_POINTS = sizeof(plane) / sizeof(plane[0]);
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_COMMAND:
+        {
+            int wmId = LOWORD(wParam);
+            // Разобрать выбор в меню:
+            switch (wmId)
+            {
+            case IDM_ABOUT:
+                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+                break;
+            case IDM_EXIT:
+                DestroyWindow(hWnd);
+                break;
+            default:
+                return DefWindowProc(hWnd, message, wParam, lParam);
+            }
+        }
+        break;
+    case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+
+            //перемещение (1)
+            double m = 0.0;
+            double n = -330;
+
+            //масштабирование (2) 
+            double a = 1.5;
+            double d = 1.5;
+
+            //зеркальное отображение относительно оси x (3)
+            double c = 0.0;
+            double f = 800.0;
+
+            //поворот на 110 градусов (4)
+            double corner = 110.0;
+            double rad = corner * 3.14 / 180.0;
+            double u = cos(rad);
+            double s = sin(rad);
+
+            //поворот вокруг произвольной точки (m,n) (5)
+            double alpha_deg = 110.0;
+            double alpha = alpha_deg * 3.14 / 180.0;
+
+            double q = 400.0;
+            double z = 450.0;
+
+            double o = cos(alpha);
+            double p = sin(alpha);
+
+            double q_final = -q * (o - 1) + z * p;
+            double z_final = -z * (o - 1) - q * p;
+
+            double M1[3][3] = {
+                {1, 0, 0},
+                {0, 1, 0},
+                {m, n, 1}
+            };
+
+            double M2[3][3] = {
+                {a, 0, 0},
+                {0, d, 0},
+                {0, 0, 1}
+            };
+
+            double M3[3][3] = {
+                {1, 0, 0},  
+                {0, -1, 0},  
+                {c, f, 1} 
+            };
+
+            double M4[3][3] = {
+                { u, s, 0},
+                {-s, u, 0},
+                {900, 400, 1} //900 и 400 добавил, чтобы сместить самолетик к центу и увидеть его на предпросмотре 
+            };
+
+            double M5[3][3] = {
+                { o,       p,       0},
+                {-p,       o,       0},
+                { q_final, z_final, 1}
+            };
+
+            bool penUp = true;
+
+            for (int i = 0; i < PLANE_POINTS; i++)
+            {
+                if (plane[i].x == -1 && plane[i].y == -1)
+                {
+                    penUp = true;
+                    continue;
+                }
+
+                //x' = x*1 + y*0 + 1*m
+                //y' = x*0 + y*1 + 1*n
+                int newX = (int)(plane[i].x * M1[0][0] + plane[i].y * M1[1][0] + M1[2][0]);
+                int newY = (int)(plane[i].x * M1[0][1] + plane[i].y * M1[1][1] + M1[2][1]);
+
+                // x' = x * a
+                // y' = y * d
+                int nx = (int)(plane[i].x * M2[0][0] + plane[i].y * M2[1][0] + M2[2][0]);
+                int ny = (int)(plane[i].x * M2[0][1] + plane[i].y * M2[1][1] + M2[2][1]);
+
+                //[x, y, 1] * M
+                int fx = (int)(plane[i].x * M3[0][0] + plane[i].y * M3[1][0] + M3[2][0]);
+                int fy = (int)(plane[i].x * M3[0][1] + plane[i].y * M3[1][1] + M3[2][1]);
+
+                // x' = x * cos(t) - y * sin(t)
+                // y' = x * sin(t) + y * cos(t)
+                int sx = (int)(plane[i].x * M4[0][0] + plane[i].y * M4[1][0] + M4[2][0]);
+                int sy = (int)(plane[i].x * M4[0][1] + plane[i].y * M4[1][1] + M4[2][1]);
+
+                //[x, y, 1] * M
+                int zx = (int)(plane[i].x * M5[0][0] + plane[i].y * M5[1][0] + M5[2][0]);
+                int zy = (int)(plane[i].x * M5[0][1] + plane[i].y * M5[1][1] + M5[2][1]);
+
+                if (penUp)
+                {
+                    //MoveToEx(hdc, plane[i].x, plane[i].y, NULL);
+                    //MoveToEx(hdc, newX, newY, NULL);
+                    //MoveToEx(hdc, nx, ny, NULL);
+                    //MoveToEx(hdc, fx, fy, NULL);
+                    //MoveToEx(hdc, sx, sy, NULL);
+                    MoveToEx(hdc, zx, zy, NULL);
+                    penUp = false;
+                }
+                else
+                {
+                    //LineTo(hdc, plane[i].x, plane[i].y);
+                    //LineTo(hdc, newX, newY);
+                    //LineTo(hdc, nx, ny);
+                    //LineTo(hdc, fx, fy);
+                    //LineTo(hdc, sx, sy);
+                    LineTo(hdc, zx, zy);
+                }
+            }
+
+            EndPaint(hWnd, &ps);
+        }
+        break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hWnd, message, wParam, lParam);
+    }
+    return 0;
+}
+
+// Обработчик сообщений для окна "О программе".
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    UNREFERENCED_PARAMETER(lParam);
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        return (INT_PTR)TRUE;
+
+    case WM_COMMAND:
+        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+        {
+            EndDialog(hDlg, LOWORD(wParam));
+            return (INT_PTR)TRUE;
+        }
+        break;
+    }
+    return (INT_PTR)FALSE;
+}
